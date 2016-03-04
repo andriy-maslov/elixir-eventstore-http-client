@@ -60,6 +60,11 @@ defmodule EventStore do
     end
   end
 
+  @doc """
+    Write events to a stream.
+    `stream` is the stream name, and
+    `events` is a [Eventstore.Event{}]
+  """
   def write_events(pid, stream, events) when is_binary(stream) and is_list(events) do
     config = get_config(pid)
     cleaned = events_to_writeable(events)
@@ -98,7 +103,7 @@ defmodule EventStore do
     end
   end
 
-  def read_stream(pid, stream, movement \\ {"head", "backward", 20}) when is_binary(stream) do
+  def read_from_stream(pid, stream, movement \\ {"head", "backward", 20}) when is_binary(stream) do
     config = get_config(pid)
     headers = get_headers(config)
     perform_read_stream_request(stream_url(config, stream, movement), headers)

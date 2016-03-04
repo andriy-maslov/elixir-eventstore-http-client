@@ -13,7 +13,7 @@ defmodule ExternalSubscriptionTest do
 
     # insert test events
     events = Enum.map 0..29, fn(n) ->
-      Event.new!("FooBared", %{"n" => n})
+      Event.new("FooBared", %{"n" => n})
     end
     {:ok, _} = EventStore.write_events(pid, stream, events)
 

@@ -26,18 +26,18 @@ defmodule EventStore.Event do
 
 
     With no data:
-      iex> event = EventStore.Event.new!("MyEvent")
+      iex> event = EventStore.Event.new("MyEvent")
       iex> event.eventType
       "MyEvent"
       iex> event.data
       nil
 
     With data:
-      iex> event = EventStore.Event.new!("MyEvent", %{"foo" => "bar"})
+      iex> event = EventStore.Event.new("MyEvent", %{"foo" => "bar"})
       iex> event.data
       %{"foo" => "bar"}
   """
-  def new!(type, data \\ nil, metadata \\ nil) do
+  def new(type, data \\ nil, metadata \\ nil) do
     %EventStore.Event{
       eventId: EventStore.gen_id!(),
       eventType: type,

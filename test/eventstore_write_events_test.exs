@@ -33,10 +33,10 @@ defmodule EventStoreWriteTest do
     pid = context[:pid]
     stream = context[:streams][:write_no_data_no_metadata]
 
-    event = Event.new!("MyEvent")
+    event = Event.new("MyEvent")
     {:ok, [^event]} = EventStore.write_events(pid, stream, [event])
     # reading back all events from stream should yield one event
-    {:ok, response} = EventStore.read_stream(pid, stream)
+    {:ok, response} = EventStore.read_from_stream(pid, stream)
 
     assert length(response.entries) == 1
     entry = Enum.at(response.entries, 0)
@@ -51,10 +51,10 @@ defmodule EventStoreWriteTest do
     pid = context[:pid]
     stream = context[:streams][:write_data]
 
-    event = Event.new!("MyEvent", %{"hello" => "world"})
+    event = Event.new("MyEvent", %{"hello" => "world"})
     {:ok, [^event]} = EventStore.write_events(pid, stream, [event])
     # reading back all events from stream should yield one event
-    {:ok, response} = EventStore.read_stream(pid, stream)
+    {:ok, response} = EventStore.read_from_stream(pid, stream)
 
     assert length(response.entries) == 1
     entry = Enum.at(response.entries, 0)
@@ -70,7 +70,7 @@ defmodule EventStoreWriteTest do
     stream = context[:streams][:write_many]
 
     events = Enum.map 0..99, fn(n) ->
-      Event.new!("NumberAdded", %{"n" => n})
+      Event.new("NumberAdded", %{"n" => n})
     end
 
     {:ok, _} = EventStore.write_events(pid, stream, events)

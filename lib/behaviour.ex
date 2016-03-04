@@ -33,7 +33,7 @@ defmodule EventStore.Behaviour do
   @doc """
     Read a stream given a specific offset (anchor), direction and size
   """
-  @callback read_stream(client :: pid, stream :: String.t, movement :: tuple) ::
+  @callback read_from_stream(client :: pid, stream :: String.t, movement :: tuple) ::
     {:ok, response :: %EventStore.Response{}} |
     {:error, reason :: any}
 
