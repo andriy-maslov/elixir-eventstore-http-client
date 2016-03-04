@@ -16,11 +16,15 @@
 
 ## Usage(ish)
 
+Connecting a client
+
 ```elixir
 {:ok, client} = EventStore.start_link host: "192.168.99.100"
-{:ok, _} = EventStore.ping client
 # If this works, we have a connection
+{:ok, _} = EventStore.ping client
 ```
+
+Writing events
 
 ```elixir
 # Create events
@@ -30,6 +34,8 @@ event_two = EventStore.Event.new("EventType2", %{"also" => "data"})
 events = [event_one, event_two]
 {:ok, ^events} = EventStore.write_events(client, "stream-name", events)
 ```
+
+Reading from a stream
 
 ```elixir
 # Reading from a stream
@@ -46,6 +52,8 @@ movement = {0, "forward", 20} # which reads as: "Read from event 0 and forward 2
 # NOTE the order of the returned events is _always_ most recent event first
 {:ok, response} = EventStore.read_from_stream(client, "stream-name", movement)
 ```
+
+Reading a stream (from event 0 and forward)
 
 ```elixir
 # If you want to traverse a stream from event 0 and forward, the follow_stream
