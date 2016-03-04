@@ -2,10 +2,13 @@
 
 ## Things implemented
 
-- Write events
-- Read stream
+- Streams
+    - Write events
+    - Read events
+    - Delete
 - Subscription (competing consumers)
-
+    - Create, info, delete
+    - Read events
 
 ## Note that
 
