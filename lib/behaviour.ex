@@ -51,16 +51,44 @@ defmodule EventStore.Behaviour do
   @doc """
     Create a new subscription.
   """
-  @callback create_subscription(client :: pid, stream :: String.t, name :: String.t, options :: list) ::
+  @callback create_subscription(client :: pid, subscription :: %EventStore.Subscription{}) ::
     {:ok, %EventStore.Subscription{}} |
-    {:error, reason :: any}
+    {:error, {:conflict, nil}} |
+    {:error, {:unexpected_status_code, code :: integer}}
+
+  @doc """
+    Ensure a subscription exists.
+    Assert that configuration matches any existing subscription
+  """
+  @callback ensure_subscription(client :: pid, subscription :: %EventStore.Subscription{}) ::
+    {:ok, %EventStore.Subscription{}} |
+    {:error, :not_found} |
+    {:error, {:conflict, {:conflicting_keys, keys :: [atom]}}} |
+    {:error, {:unexpected_status_code, code :: integer}}
 
   @doc """
     Delete an existing Subscription
   """
-  @callback delete_subscription(client :: pid, stream :: String.t, name :: String.t) ::
-  {:ok, nil} |
-  {:error, reason :: any}
+  @callback delete_subscription(client :: pid, subscription :: %EventStore.Subscription{}) ::
+  :ok |
+  {:error, :not_found} |
+  {:error, {:unexpected_status_code, code :: integer}}
+
+  @doc """
+    Load /info subscription
+  """
+  @callback load_subscription(client :: pid, subscription :: %EventStore.Subscription{}) ::
+  {:ok, subscription :: %EventStore.Subscription{}} |
+  {:error, :not_found} |
+  {:error, {:unexpected_status_code, code :: integer}}
+  @doc """
+    Read from a subscription.
+    Options:
+      count: 1
+  """
+  @callback read_from_subscription(client :: pid, subscription :: %EventStore.Subscription{}, opts :: Keyword.t) ::
+    {:ok, %EventStore.Subscription{}, [%EventStore.Event{}]} |
+    {:error, reason :: any}
 
   @doc """
     Ack an ackable event

@@ -4,6 +4,7 @@ defmodule EventStore do
   use GenServer
   alias HTTPoison.Response
   #alias EventStore.Event
+  alias EventStore.Subscription
 
   @uuid UUID
   @json Poison
@@ -60,7 +61,7 @@ defmodule EventStore do
     config = get_config(pid)
     cleaned = events_to_writeable(events)
     payload = @json.encode!(cleaned)
-    headers = get_default_headers()
+    headers = get_headers(config)
     url = stream_url(config, stream)
     case HTTPoison.post!(url, payload, headers) do
       %Response{status_code: 201} ->
@@ -74,13 +75,17 @@ defmodule EventStore do
   def delete_stream(pid, stream, options \\ []) when is_binary(stream) do
     config = get_config(pid)
     url = stream_url(config, stream)
-    default_headers = []
-    headers = Enum.reduce options, default_headers, fn (opt, acc) ->
+
+    headers = get_headers(config)
+
+    # options to headers
+    headers = Enum.reduce options, headers, fn (opt, acc) ->
       case opt do
         {:hard_delete, true} -> [{"ES-HardDelete", "true"} | acc]
         _ -> acc
       end
     end
+
     case HTTPoison.delete!(url, headers) do
       %Response{status_code: 204} ->
         :ok
@@ -92,35 +97,97 @@ defmodule EventStore do
 
   def read_stream(pid, stream, movement \\ {"head", "backward", 20}) when is_binary(stream) do
     config = get_config(pid)
-    perform_read_stream_request(stream_url(config, stream, movement))
+    headers = get_headers(config)
+    perform_read_stream_request(stream_url(config, stream, movement), headers)
   end
 
   def follow_stream(pid, stream) when is_binary(stream) do
     config = get_config(pid)
+    headers = get_headers(config)
     movement = {0, "forward", 20}
-    perform_read_stream_request(stream_url(config, stream, movement))
+    perform_read_stream_request(stream_url(config, stream, movement), headers)
   end
-  def follow_stream(_pid, %EventStore.Response{} = response) do
+  def follow_stream(pid, %EventStore.Response{} = response) do
+    config = get_config(pid)
+    headers = get_headers(config)
     case EventStore.Response.get_link(response, "previous") do
       nil -> {:error, nil}
-      url -> perform_read_stream_request(url)
+      url -> perform_read_stream_request(url, headers)
     end
   end
 
+  @doc """
+    Create a subscription
+  """
+  def create_subscription(pid, {stream, name}),
+    do: create_subscription(pid, Subscription.new(stream, name))
+  def create_subscription(pid, %Subscription{} = subscription) do
+    config = get_config(pid)
+    url = subscription_url(config, subscription)
+    headers = get_headers(config, accept: "application/json", content_type: "application/json")
+    case HTTPoison.put!(url, @json.encode!(subscription.config), headers) do
+      %Response{status_code: 201}  -> {:ok, subscription}
+      %Response{status_code: 409}  -> {:error, {:conflict, nil}}
+      %Response{status_code: code} -> {:error, {:unexpected_status_code, code}}
+    end
+  end
 
-  def create_subscription(pid, stream, name, options \\ []) do
+  @doc """
+    Will try to create subscription, if conflict, load existing and check that
+    the existing configuration is like the one given
+  """
+  def ensure_subscription(pid, {stream, name}),
+    do: ensure_subscription(pid, Subscription.new(stream, name))
+  def ensure_subscription(pid, %Subscription{} = subscription) do
+    # try to create:
+    case create_subscription(pid, subscription) do
+      {:ok, sub} -> # if OK, return loaded sub
+        load_subscription(pid, sub)
+      {:error, {:conflict, nil}} -> # if conflict
+        {:ok, sub} = load_subscription(pid, subscription) # load existing
+        case EventStore.Subscription.Config.diff(subscription.config, sub.config) do
+          []    -> {:ok, sub} # No config difference, just return existing
+          diff  -> {:error, {:conflict, {:conflicting_keys, diff}}} # conflict!
+        end
+      {:error, reason} -> # on any other error, parse reason through
+        {:error, reason}
+    end
+  end
+  def load_subscription(pid, {stream, name}),
+    do: load_subscription(pid, Subscription.new(stream, name))
+  def load_subscription(pid, %Subscription{} = subscription) do
+    config = get_config(pid)
+    url = "#{subscription_url(config, subscription)}/info"
+    headers = get_headers(config, accept: "application/json")
+    case HTTPoison.get!(url, headers) do
+      %Response{status_code: 200, body: body}  -> {:ok, EventStore.Subscription.parse(body)}
+      %Response{status_code: 404}  -> {:error, :not_found}
+      %Response{status_code: code} -> {:error, {:unexpected_status_code, code}}
+    end
+  end
+
+  def delete_subscription(pid, {stream, name}),
+    do: delete_subscription(pid, Subscription.new(stream, name))
+  def delete_subscription(pid, subscription) do
+    config = get_config(pid)
+    url = subscription_url(config, subscription)
+    headers = get_headers(config, content_type: nil, accept: "application/json")
+    case HTTPoison.delete!(url, headers) do
+      %Response{status_code: 200}  -> :ok
+      %Response{status_code: 404}  -> {:error, :not_found}
+      %Response{status_code: code} -> {:error, {:unexpected_status_code, code}}
+    end
+  end
+
+  def read_from_subscription(pid, %Subscription{} = subscription, opts \\ []) do
     raise "Not implemented"
   end
 
-  def delete_subscription(pid, stream, name) do
+  def ack_event(_event) do
     raise "Not implemented"
   end
 
-  def ack_event(event) do
-    raise "Not implemented"
-  end
-
-  def nack_event(event) do
+  def nack_event(_event) do
     raise "Not implemented"
   end
 
@@ -129,8 +196,7 @@ defmodule EventStore do
   #
   # Helpers
   #
-  defp perform_read_stream_request(url) do
-    headers = get_default_headers()
+  defp perform_read_stream_request(url, headers) do
     case HTTPoison.get!(url, headers, params: [embed: "body"]) do
       %Response{status_code: 200, body: body} ->
         {:ok, EventStore.Response.parse(body)}
@@ -139,11 +205,11 @@ defmodule EventStore do
     end
   end
 
-  defp get_default_headers do
-    [
-      {"Content-Type", @mime_json_events},
-      {"Accept", @mime_json_events}
-    ]
+  defp get_headers(config, opts \\ []) do
+    auth = Base.encode64("#{config[:username]}:#{config[:password]}")
+    [{"Content-Type", Keyword.get(opts, :content_type, @mime_json_events)},
+     {"Accept", Keyword.get(opts, :accept, @mime_json_events)},
+     {"Authorization", "Basic #{auth}"}]
   end
 
   defp base_url(config) do
@@ -155,6 +221,10 @@ defmodule EventStore do
   end
   defp stream_url(config, stream, {anchor, direction, size}) do
     "#{stream_url(config, stream)}/#{anchor}/#{direction}/#{size}"
+  end
+
+  defp subscription_url(config, %EventStore.Subscription{eventStreamId: stream, groupName: name}) do
+    "#{base_url(config)}/subscriptions/#{stream}/#{name}"
   end
 
   defp events_to_writeable(events) do
