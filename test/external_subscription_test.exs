@@ -32,7 +32,7 @@ defmodule ExternalSubscriptionTest do
   test "Create, load and delete subscription", context do
     pid = context[:pid]
     stream = context[:stream]
-    {:ok, created_sub} = EventStore.create_subscription(pid, {stream, "my-sub"})
+    {:ok, created_sub} = EventStore.create_subscription(pid, {stream, "test-create-load-delete-sub"})
     assert %Subscription{} = created_sub
     {:ok, loaded_sub} = EventStore.load_subscription(pid, created_sub)
     assert %Subscription{} = loaded_sub
@@ -42,6 +42,39 @@ defmodule ExternalSubscriptionTest do
     assert diff == []
     # delete the subscription again
     assert EventStore.delete_subscription(pid, loaded_sub) == :ok
+  end
+
+  test "ensure sub", context do
+    pid = context[:pid]
+    stream = context[:stream]
+    {:ok, sub} = EventStore.ensure_subscription(pid, {stream, "test-ensure-sub"})
+    {:ok, ^sub} = EventStore.ensure_subscription(pid, sub)
+    {:ok, ^sub} = EventStore.ensure_subscription(pid, sub)
+    assert EventStore.delete_subscription(pid, sub) == :ok
+  end
+
+  test "ensure sub, read events, delete sub", context do
+    pid = context[:pid]
+    stream = context[:stream]
+
+    {:ok, sub} = EventStore.ensure_subscription(pid, {stream, "test-read-sub"})
+    {:ok, ^sub, entries} = EventStore.read_from_subscription(pid, sub, count: 5)
+    assert length(entries) == 5
+    assert [4,3,2,1,0] == Enum.map(entries, &(&1.eventNumber)) # NOTE the order of events
+    assert EventStore.delete_subscription(pid, sub) == :ok
+  end
+
+  test "ensure sub, read events, ack, read events, ack, delete sub", context do
+    pid = context[:pid]
+    stream = context[:stream]
+
+    {:ok, sub} = EventStore.ensure_subscription(pid, {stream, "test-read-ack-sub"})
+    {:ok, ^sub, entries} = EventStore.read_from_subscription(pid, sub, count: 5)
+    assert length(entries) == 5
+    assert [4,3,2,1,0] == Enum.map(entries, &(&1.eventNumber)) # NOTE the order of events
+    :ok = EventStore.ack_events(pid, sub, entries)
+
+    assert EventStore.delete_subscription(pid, sub) == :ok
   end
 
 end

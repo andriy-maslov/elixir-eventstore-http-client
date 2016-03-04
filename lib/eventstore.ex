@@ -8,7 +8,10 @@ defmodule EventStore do
 
   @uuid UUID
   @json Poison
-  @mime_json_events "application/vnd.eventstore.events+json"
+
+  @mime_json "application/json"
+  @mime_events_json "application/vnd.eventstore.events+json"
+  @mime_competingatom_json "application/vnd.eventstore.competingatom+json"
 
   @default_args [
     username: "admin",
@@ -124,7 +127,7 @@ defmodule EventStore do
   def create_subscription(pid, %Subscription{} = subscription) do
     config = get_config(pid)
     url = subscription_url(config, subscription)
-    headers = get_headers(config, accept: "application/json", content_type: "application/json")
+    headers = get_headers(config, accept: @mime_json, content_type: @mime_json)
     case HTTPoison.put!(url, @json.encode!(subscription.config), headers) do
       %Response{status_code: 201}  -> {:ok, subscription}
       %Response{status_code: 409}  -> {:error, {:conflict, nil}}
@@ -158,7 +161,7 @@ defmodule EventStore do
   def load_subscription(pid, %Subscription{} = subscription) do
     config = get_config(pid)
     url = "#{subscription_url(config, subscription)}/info"
-    headers = get_headers(config, accept: "application/json")
+    headers = get_headers(config, accept: @mime_json)
     case HTTPoison.get!(url, headers) do
       %Response{status_code: 200, body: body}  -> {:ok, EventStore.Subscription.parse(body)}
       %Response{status_code: 404}  -> {:error, :not_found}
@@ -171,7 +174,7 @@ defmodule EventStore do
   def delete_subscription(pid, subscription) do
     config = get_config(pid)
     url = subscription_url(config, subscription)
-    headers = get_headers(config, content_type: nil, accept: "application/json")
+    headers = get_headers(config, content_type: nil, accept: @mime_json)
     case HTTPoison.delete!(url, headers) do
       %Response{status_code: 200}  -> :ok
       %Response{status_code: 404}  -> {:error, :not_found}
@@ -179,25 +182,53 @@ defmodule EventStore do
     end
   end
 
+  @doc """
+    Read events from subscription.
+    Options:
+      count: 1
+  """
   def read_from_subscription(pid, %Subscription{} = subscription, opts \\ []) do
-    raise "Not implemented"
+    config = get_config(pid)
+    url = case Keyword.get(opts, :count) do
+      nil -> subscription_url(config, subscription)
+      c   -> "#{subscription_url(config, subscription)}/#{c}"
+    end
+    headers = get_headers(config, accept: @mime_competingatom_json)
+    case perform_read_stream_request(url, headers) do
+      {:ok, resp}      -> {:ok, subscription, resp.entries}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  def ack_event(_event) do
-    raise "Not implemented"
+  def ack_events(pid, subscription, events) when is_list(events) do
+    config = get_config(pid)
+    url = "#{subscription_url(config, subscription)}/ack"
+    params = [ids: Enum.join(Enum.map(events, &(&1.eventId)), ",")]
+    headers = get_headers(config, accept: @mime_json, content_type: @mime_json)
+    case HTTPoison.post!(url, "", headers, params: params) do
+      %Response{status_code: 202} -> :ok
+      %Response{status_code: code} -> {:error, {:unexpected_status_code, code}}
+    end
   end
 
-  def nack_event(_event) do
-    raise "Not implemented"
+  def nack_events(pid, subscription, events, action \\ "Retry") when is_list(events) do
+    config = get_config(pid)
+    url = "#{subscription_url(config, subscription)}/nack"
+    params = [ids: Enum.join(Enum.map(events, &(&1.eventId)), ","), action: action]
+    headers = get_headers(config, accept: @mime_json, content_type: @mime_json)
+    case HTTPoison.post!(url, "", headers, params: params) do
+      %Response{status_code: 202} -> :ok
+      %Response{status_code: code} -> {:error, {:unexpected_status_code, code}}
+    end
   end
-
 
 
   #
   # Helpers
   #
   defp perform_read_stream_request(url, headers) do
-    case HTTPoison.get!(url, headers, params: [embed: "body"]) do
+    params = [embed: "body"]
+    case HTTPoison.get!(url, headers, params: params) do
       %Response{status_code: 200, body: body} ->
         {:ok, EventStore.Response.parse(body)}
       %Response{status_code: code} ->
@@ -207,8 +238,8 @@ defmodule EventStore do
 
   defp get_headers(config, opts \\ []) do
     auth = Base.encode64("#{config[:username]}:#{config[:password]}")
-    [{"Content-Type", Keyword.get(opts, :content_type, @mime_json_events)},
-     {"Accept", Keyword.get(opts, :accept, @mime_json_events)},
+    [{"Content-Type", Keyword.get(opts, :content_type, @mime_events_json)},
+     {"Accept", Keyword.get(opts, :accept, @mime_events_json)},
      {"Authorization", "Basic #{auth}"}]
   end
 

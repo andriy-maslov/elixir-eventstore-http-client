@@ -93,15 +93,15 @@ defmodule EventStore.Behaviour do
   @doc """
     Ack an ackable event
   """
-  @callback ack_event(event :: %EventStore.Event{}) ::
-    {:ok, nil} |
+  @callback ack_events(client :: pid, subscription :: %EventStore.Subscription{}, events :: [%EventStore.Event{}]) ::
+    :ok |
     {:error, reason :: any}
 
   @doc """
     Nack a nackable event
   """
-  @callback nack_event(event :: %EventStore.Event{}) ::
-    {:ok, nil} |
+  @callback nack_events(client :: pid, subscription :: %EventStore.Subscription{}, events :: [%EventStore.Event{}], action :: String.t) ::
+    :ok |
     {:error, reason :: any}
 
 end
