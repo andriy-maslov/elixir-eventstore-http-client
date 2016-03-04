@@ -30,5 +30,23 @@ defmodule EventStore.Behaviour do
   """
   @callback gen_id!() :: String.t
 
+  @doc """
+    Read a stream given a specific offset (anchor), direction and size
+  """
+  @callback read_stream(client :: pid, stream :: String.t, movement :: tuple) ::
+    {:ok, response :: %EventStore.Response{}} |
+    {:error, reason :: any}
+
+  @doc """
+    Follow a stream from start to head (multiple calls required)
+  """
+  @callback follow_stream(client :: pid, stream :: String.t) ::
+    {:ok, %EventStore.Response{}} |
+    {:error, reason :: any}
+  @callback follow_stream(client :: pid, response :: %EventStore.Response{}) ::
+    {:ok, %EventStore.Response{}} |
+    {:error, reason :: any}
+
+
 
 end

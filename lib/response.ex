@@ -31,6 +31,9 @@ defmodule EventStore.Response do
     end
   end
 
+  @doc """
+    Parse a stream json events response body into a Response object 
+  """
   def parse(body) when is_binary(body) do
     response = @json.decode!(body, as: %EventStore.Response{
       entries: [%EventStore.Event{}],

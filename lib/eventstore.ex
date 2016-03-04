@@ -90,8 +90,7 @@ defmodule EventStore do
     end
   end
 
-  def read_stream(pid, stream, movement \\ {"head", "backward", 20})
-  def read_stream(pid, stream, movement) when is_binary(stream) do
+  def read_stream(pid, stream, movement \\ {"head", "backward", 20}) when is_binary(stream) do
     config = get_config(pid)
     perform_read_stream_request(stream_url(config, stream, movement))
   end
