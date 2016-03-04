@@ -3,7 +3,7 @@ defmodule EventStore do
   require Logger
   use GenServer
   alias HTTPoison.Response
-  alias EventStore.Event
+  #alias EventStore.Event
 
   @uuid UUID
   @json Poison
@@ -106,6 +106,24 @@ defmodule EventStore do
       url -> perform_read_stream_request(url)
     end
   end
+
+
+  def create_subscription(pid, stream, name, options \\ []) do
+    raise "Not implemented"
+  end
+
+  def delete_subscription(pid, stream, name) do
+    raise "Not implemented"
+  end
+
+  def ack_event(event) do
+    raise "Not implemented"
+  end
+
+  def nack_event(event) do
+    raise "Not implemented"
+  end
+
 
 
   #

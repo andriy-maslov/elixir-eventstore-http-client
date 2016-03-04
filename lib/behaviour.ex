@@ -48,5 +48,32 @@ defmodule EventStore.Behaviour do
     {:error, reason :: any}
 
 
+  @doc """
+    Create a new subscription.
+  """
+  @callback create_subscription(client :: pid, stream :: String.t, name :: String.t, options :: list) ::
+    {:ok, %EventStore.Subscription{}} |
+    {:error, reason :: any}
+
+  @doc """
+    Delete an existing Subscription
+  """
+  @callback delete_subscription(client :: pid, stream :: String.t, name :: String.t) ::
+  {:ok, nil} |
+  {:error, reason :: any}
+
+  @doc """
+    Ack an ackable event
+  """
+  @callback ack_event(event :: %EventStore.Event{}) ::
+    {:ok, nil} |
+    {:error, reason :: any}
+
+  @doc """
+    Nack a nackable event
+  """
+  @callback nack_event(event :: %EventStore.Event{}) ::
+    {:ok, nil} |
+    {:error, reason :: any}
 
 end
