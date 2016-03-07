@@ -142,4 +142,5 @@ To consume events from subscriptions:
 # `events` will be a list of 0 to `count` %EventStore.Event{} structs.
 # The function can also return
 # {:error, {:unexpected_status_code, code}}
+:ok = EventStore.nack
 ```
