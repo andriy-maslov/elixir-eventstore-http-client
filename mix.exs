@@ -42,7 +42,7 @@ defmodule EventStore.Mixfile do
   defp package do
     [
       files: ~w(lib mix.exs README.md VERSION),
-      maintainers: ["Henrik Tudborg"],
+      maintainers: ["Henrik Tudborg <henriktudborg@gmail.com>"],
       licenses: [],
       links: %{
         "GitHub" => "https://github.com/tbug/elixir-eventstore-http-client"
