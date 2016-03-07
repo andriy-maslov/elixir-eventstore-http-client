@@ -1,5 +1,9 @@
 # EventStore
 
+__NOTE__: This is very much a work-in-progress.
+Only the things that I actually need is implemented, and I'm still not happy
+with parts of the API, so expect changes.
+
 ## Things implemented
 
 - Streams
