@@ -80,4 +80,59 @@ entries = Enum.concat([first_entries, second_entries])
 
 ### Subscriptions
 
-TODO
+__NOTE__ All arguments labeled `subscription` can be either a `%Subscription{}` struct
+or a `{stream_name, subscription_group_name}` tuple.
+
+```elixir
+# Creating a subscription
+{:ok, %EventStore.Subscriptions{} = subscription} =
+    EventStore.create_subscription(client, subscription)
+# Or if the subscription already exists, it returns:
+# {:error, {:conflict, nil}}
+
+# Note however, that the subscription struct is not "loaded" with the sub information.
+# Subscription info includes statistics, configuration, pointer positions, etc.
+# See the %Subscription{} module for full list of fields.
+# If you want to load the server's data on the subscription you can use:
+{:ok, subscription} = EventStore.load_subscription(client, subscription)
+# which will return the following if the subscription is not found on the server:
+# {:error, :not_found}
+
+# Deleting a subscription is what you'd expect:
+:ok = EventStore.delete_subscription(client, subscription)
+# which can also return:
+# {:error, :not_found}
+# or:
+# {:error, {:unexpected_status_code, code}}
+```
+
+A better way to create a subscription is using the `ensure_subscription` function.
+The arguments are just like `create_subscription` but it will create a subscription
+if needed, load the full subscription struct from the server and diff it with the
+subscription argument. If the configuration differs, a conflict error is returned,
+but if the desired configuration and the server one matches, a regular ok response
+is returned.
+
+```elixir
+stream = "my-stream"
+group = "my-stream-subscription"
+# Create our custom config (unset fields will fall back to server defaults on creation)
+config = %EventStore.Subscription.Config{bufferSize: 100}
+# Using the above config we create our desired subscription
+new_sub = EventStore.Subscription.new(stream, group, config)
+# and we ensure that the subscription exists:
+{:ok, subscription} = EventStore.ensure_subscription(client, new_sub)
+# The `subscription` variable now contains a loaded Subscription struct.
+```
+This is the recommended way to create subscriptions.
+
+
+To consume events from subscriptions:
+
+```elixir
+# Assuming `sub` is a subscription:
+{:ok, ^sub, events} = EventStore.read_from_subscription(pid, sub, count: 1)
+# `events` will be a list of 0 to `count` %EventStore.Event{} structs.
+# The function can also return
+# {:error, {:unexpected_status_code, code}}
+```
