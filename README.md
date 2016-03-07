@@ -14,6 +14,13 @@ with parts of the API, so expect changes.
     - Create, info, delete
     - Read events
 
+## Things I'd like to do
+
+- configurable HTTP lib (very doable)
+- configurable UUID lib (very doable)
+- configurable JSON lib (although Poison dep is pretty tight)
+- A better `follow stream` api. Thinking some kind of Cursor concept.
+
 ## Note that
 
 - Requests are performed in the process that calls the `EventStore.*` API
