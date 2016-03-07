@@ -138,9 +138,10 @@ To consume events from subscriptions:
 
 ```elixir
 # Assuming `sub` is a subscription:
-{:ok, ^sub, events} = EventStore.read_from_subscription(pid, sub, count: 1)
+{:ok, ^sub, events} = EventStore.read_from_subscription(client, sub, count: 1)
 # `events` will be a list of 0 to `count` %EventStore.Event{} structs.
 # The function can also return
 # {:error, {:unexpected_status_code, code}}
-:ok = EventStore.nack
+# Remember to ack or nack the events when you are done with them
+:ok = EventStore.ack_events(client, sub, events)
 ```
