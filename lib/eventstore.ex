@@ -1,4 +1,8 @@
 defmodule EventStore do
+  @moduledoc """
+    The Client API.
+  """
+
   @behaviour EventStore.Behaviour
   require Logger
   use GenServer

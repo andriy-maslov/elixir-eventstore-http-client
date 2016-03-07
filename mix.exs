@@ -11,6 +11,9 @@ defmodule EventStore.Mixfile do
       description: "HTTP Client for EventStore (geteventstore.com)",
       deps: deps,
       package: package,
+      source_url: "https://github.com/tbug/elixir-eventstore-http-client",
+      homepage_url: "https://github.com/tbug/elixir-eventstore-http-client",
+      docs: docs,
       consolidate_protocols: Mix.env != :test
     ]
   end
@@ -36,6 +39,8 @@ defmodule EventStore.Mixfile do
       {:httpoison, "~> 0.8"},
       {:poison, "~> 2.1"},
       {:uuid, "~> 1.1"},
+      {:earmark, "~> 0.1", only: :dev},
+      {:ex_doc, "~> 0.11", only: :dev}
     ]
   end
 
@@ -47,6 +52,12 @@ defmodule EventStore.Mixfile do
       links: %{
         "GitHub" => "https://github.com/tbug/elixir-eventstore-http-client"
       }
+    ]
+  end
+
+  defp docs do
+    [
+      extras: ["README.md"]
     ]
   end
 end
