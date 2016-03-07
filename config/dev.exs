@@ -1,8 +1,6 @@
 use Mix.Config
 
-
 config :logger, level: :debug
-
 
 config :eventstore, :options,
   host: "192.168.99.100",

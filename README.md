@@ -1,4 +1,4 @@
-# EventStore
+# EventStore  Client
 
 __NOTE__: This is very much a work-in-progress.
 Only the things that I actually need is implemented, and I'm still not happy

@@ -5,7 +5,7 @@ defmodule EventStore.Mixfile do
 
   def project do
     [
-      app: :eventstore,
+      app: :eventstore_client,
       version: @version,
       elixir: "~> 1.0",
       description: "HTTP Client for EventStore (geteventstore.com)",
