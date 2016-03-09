@@ -248,8 +248,8 @@ defmodule EventStore do
   end
 
   defp extract_last_path_segment(uri) do
-      no_qs = Enum.at(String.split(uri, "?"), 0)
-      Enum.at(String.split(no_qs, "/"), -1)
+    path = URI.parse(uri).path
+    Enum.at(String.split(path, "/"), -1)
   end
 
 
