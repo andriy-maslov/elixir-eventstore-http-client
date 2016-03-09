@@ -242,9 +242,14 @@ defmodule EventStore do
     Enum.map events, fn (event) ->
       case Event.get_link(event, "ack") do
         nil -> raise "Cannot extract 'ack' link"
-        uri -> Enum.at(String.split(uri, "/"), -1)
+        uri -> extract_last_path_segment(uri)
       end
     end
+  end
+
+  defp extract_last_path_segment(uri) do
+      no_qs = Enum.at(String.split(uri, "?"), 0)
+      Enum.at(String.split(no_qs, "/"), -1)
   end
 
 
