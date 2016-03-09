@@ -11,7 +11,7 @@ defmodule EventStore.Event do
     :isJson,
     :isLinkMetaData,
     :isMetaData,
-    #:links,
+    :links,
     :metadata,
     #:positionEventNumber,
     #:positionStreamId,
@@ -58,4 +58,21 @@ defmodule EventStore.Event do
     event.eventNumber == nil
   end
 
+
+  @doc """
+    Get link by relation from event, or nil of no relation by that name
+
+      iex> r = %EventStore.Event{
+      ...>   links: [%{"uri" => "a", "relation" => "next"}]}
+      iex> EventStore.Event.get_link(r, "next")
+      "a"
+      iex> EventStore.Event.get_link(r, "none")
+      nil
+  """
+  def get_link(event, relation) do
+    case Enum.find event.links, &(&1["relation"] == relation) do
+      nil             -> nil
+      %{"uri" => uri} -> uri
+    end
+  end
 end

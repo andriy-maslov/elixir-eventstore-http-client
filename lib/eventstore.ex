@@ -7,7 +7,7 @@ defmodule EventStore do
   require Logger
   use GenServer
   alias HTTPoison.Response
-  #alias EventStore.Event
+  alias EventStore.Event
   alias EventStore.Subscription
 
   @uuid UUID
@@ -212,7 +212,9 @@ defmodule EventStore do
   def ack_events(pid, subscription, events) when is_list(events) do
     config = get_config(pid)
     url = "#{subscription_url(config, subscription)}/ack"
-    params = [ids: Enum.join(Enum.map(events, &(&1.eventId)), ",")]
+    params = [
+      ids: Enum.join(extract_ack_event_ids(events), ",")
+    ]
     headers = get_headers(config, accept: @mime_json, content_type: @mime_json)
     case HTTPoison.post!(url, "", headers, params: params) do
       %Response{status_code: 202} -> :ok
@@ -223,11 +225,25 @@ defmodule EventStore do
   def nack_events(pid, subscription, events, action \\ "Retry") when is_list(events) do
     config = get_config(pid)
     url = "#{subscription_url(config, subscription)}/nack"
-    params = [ids: Enum.join(Enum.map(events, &(&1.eventId)), ","), action: action]
+    params = [
+      ids: Enum.join(extract_ack_event_ids(events), ","),
+      action: action
+    ]
     headers = get_headers(config, accept: @mime_json, content_type: @mime_json)
     case HTTPoison.post!(url, "", headers, params: params) do
       %Response{status_code: 202} -> :ok
       %Response{status_code: code} -> {:error, {:unexpected_status_code, code}}
+    end
+  end
+
+  # The ack-able id is not always the eventId property, so we extract
+  # the event id from the uri.
+  defp extract_ack_event_ids(events) do
+    Enum.map events, fn (event) ->
+      case Event.get_link(event, "ack") do
+        nil -> raise "Cannot extract 'ack' link"
+        uri -> Enum.at(String.split(uri, "/"), -1)
+      end
     end
   end
 
