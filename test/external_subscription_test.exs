@@ -5,7 +5,7 @@ defmodule ExternalSubscriptionTest do
   alias EventStore.Event
   use ExUnit.Case
 
-  @opts Application.get_env :eventstore, :options
+  @opts Application.get_env :eventstore_client, :options
 
   setup_all do
     {:ok, pid} = EventStore.start_link @opts

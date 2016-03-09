@@ -4,7 +4,7 @@ defmodule EventStoreConnectTest do
   use ExUnit.Case
   doctest EventStore
 
-  @opts Application.get_env :eventstore, :options
+  @opts Application.get_env :eventstore_client, :options
 
   test "start/stop" do
     # we don't connect on start_link, so a fake host is ok

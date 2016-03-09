@@ -5,7 +5,7 @@ defmodule EventStoreWriteTest do
   use ExUnit.Case
   doctest EventStore
 
-  @opts Application.get_env :eventstore, :options
+  @opts Application.get_env :eventstore_client, :options
 
   setup_all do
     {:ok, pid} = EventStore.start_link @opts
