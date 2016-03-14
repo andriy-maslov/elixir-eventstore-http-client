@@ -37,7 +37,7 @@ defmodule EventStore.Mixfile do
   defp deps do
     [
       {:httpoison, "~> 0.8"},
-      {:poison, "~> 2.1"},
+      {:poison, "~> 2.0"},
       {:uuid, "~> 1.1"},
       {:earmark, "~> 0.1", only: :dev},
       {:ex_doc, "~> 0.11", only: :dev}
