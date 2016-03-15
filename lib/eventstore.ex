@@ -22,7 +22,8 @@ defmodule EventStore do
     password: "changeit",
     port: 2113,
     host: nil,
-    protocol: "http"
+    protocol: "http",
+    url: nil
   ]
 
   #
@@ -30,14 +31,42 @@ defmodule EventStore do
   #
 
   def start_link(args, opts \\ []) when is_list(args) do
-    if args[:host] == nil do
-      raise "host not set"
-    end
     GenServer.start_link __MODULE__, args, opts
   end
 
+  def uri_to_opts(uri_str) do
+    uri = URI.parse(uri_str)
+    state = Keyword.new
+    # handle auth
+    if uri.userinfo do
+      state = case String.split(uri.userinfo, ":") do
+        [username, password] -> state
+          |> Keyword.put(:username, username)
+          |> Keyword.put(:password, password)
+        [username] -> state
+          |> Keyword.put(:username, username)
+      end
+    end
+    # handle rest
+    state
+    |> Keyword.put(:protocol, uri.scheme)
+    |> Keyword.put(:host, uri.host)
+    |> Keyword.put(:port, uri.port)
+  end
+
   def init(args) when is_list(args) do
-    {:ok, Keyword.merge(@default_args, args)}
+    state = Keyword.merge(@default_args, args)
+    if args[:url] do
+      uri_opts = case args[:url] do
+        {:system, var} -> uri_to_opts(System.get_env(var))
+        str -> uri_to_opts(str)
+      end
+      state = Keyword.merge(state, uri_opts)
+    end
+    if state[:host] == nil do
+      raise "host not set" #sanity
+    end
+    {:ok, state}
   end
 
   def stop(pid) do

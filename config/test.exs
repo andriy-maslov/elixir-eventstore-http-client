@@ -5,5 +5,4 @@ config :logger, level: :debug
 
 
 config :eventstore_client, :options,
-  host: "192.168.99.100",
-  port: 2113
+  url: "http://admin:changeit@192.168.99.100:2113"
