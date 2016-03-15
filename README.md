@@ -28,6 +28,21 @@ with parts of the API, so expect changes.
   That is, the most recent event is at the top of the list. This might be
   counter-intuitive if traversing a stream from event 0 to head.
 
+## Configuration
+
+The following keys are used
+```
+username # defaults to "admin"
+password # defaults to "changeit"
+port     # defaults to 2113
+host     # required if url is not set
+protocol # defaults to "http"
+url      # convenience, will parse to the above.
+         # Available from 0.1.3
+         # Can also be set to {:system, "MY_ENV_VAR"}
+         # to grab url from runtime environment
+```
+
 ## Usage(ish)
 
 Connecting a client
