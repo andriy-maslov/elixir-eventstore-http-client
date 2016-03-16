@@ -2,19 +2,19 @@ defmodule EventStore.Event do
   @derive [Poison.Encoder]
 
   defstruct [
-    #:author,
+    :author,
     :data,
     :eventId,
     :eventNumber,
     :eventType,
-    #:id,
+    :id,
     :isJson,
     :isLinkMetaData,
     :isMetaData,
     :links,
     :metadata,
-    #:positionEventNumber,
-    #:positionStreamId,
+    :positionEventNumber,
+    :positionStreamId,
     :streamId,
     #:summary,
     #:title,
@@ -23,7 +23,6 @@ defmodule EventStore.Event do
 
   @doc """
     Create a new Event. Takes a type as a String, and optional data and metadata
-
 
     With no data:
       iex> event = EventStore.Event.new("MyEvent")
