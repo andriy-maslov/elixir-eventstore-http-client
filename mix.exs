@@ -36,7 +36,7 @@ defmodule EventStore.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:httpoison, "~> 1.6"},
+      {:httpoison, "~> 1.1"},
       {:poison, "~> 2.0"},
       {:uuid, "~> 1.1"},
       {:earmark, "~> 0.1", only: :dev},
